@@ -8,31 +8,40 @@ class GamesController < ApplicationController
     return @letters
   end
 
-  def english_word
-    url = "https://wagon-dictionary.herokuapp.com/#{@answer}"
+  def english_word(word)
+    url = "https://wagon-dictionary.herokuapp.com/#{@word}"
     word_dictionary = open(url).read
-    word = JSON.parse(word_dictionary)
-    return word['found']
+    word_info = JSON.parse(word_dictionary)
+    return word_info['found']
   end
 
-  # The method returns true if the block never returns false or nil
-  def letter_in_grid
+  def letter_in_grid(answer, grid)
     @answer.chars.sort.all? { |letter| @grid.include?(letter) }
   end
 
-  def score
-    @grid = params[:grid]
-    @answer = params[:word]
-    grid_letters = @grid.each_char { |letter| print letter, ''}
-    if !letter_in_grid
-      @result = "Sorry, but #{@answer.upcase} can’t be built out of #{grid_letters}."
-    elsif !english_word
-      @result = "Sorry but #{@answer.upcase} does not seem to be an English word."
-    elsif letter_in_grid && !english_word
-      @result = "Sorry but #{@answer.upcase} does not seem to be an English word."
-    else letter_in_grid && !english_word
-      @result = "Congratulation! #{@answer.upcase} is a valid English word."
+  class GamesController < ApplicationController
+    # ...
+
+    def score
+      @grid = params[:grid]
+      @word = params[:word]
+
+      if !word_in_grid?(@word, @grid)
+        @result = "Désolé, mais #{@word.upcase} ne peut pas être construit à partir de #{@grid}."
+      else
+        valid_word = valid_english_word?(@word)
+
+        if valid_word
+          @score = calculate_score(@word)
+          @result = "Félicitations ! #{@word.upcase} est un mot valide et votre score est #{@score}."
+        else
+          @result = "Désolé, mais #{@word.upcase} ne semble pas être un mot anglais valide."
+        end
+      end
+
+      @new_game_link = link_to('Nouvelle partie', new_game_path)
+
+      render 'score'
     end
   end
-
 end
